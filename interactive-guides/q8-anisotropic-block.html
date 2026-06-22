@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive Math Guide</title>
+
+<!-- MathLive static styles (for rendered, non-editable math) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Frank+Ruhl+Libre:wght@400;500;600&family=Heebo:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     DESIGN TOKENS  —  "derivation ledger": a study-notebook feel.
+     Cool paper, ink-blue spine, editorial serif for the maths prose.
+     ============================================================ */
+  :root{
+    --paper:#F6F7F9; --grid:#ECEFF3; --surface:#FFFFFF;
+    --ink:#1A2230; --muted:#5A6577; --faint:#97A0AE;
+    --line:#E1E6ED; --rail:#CAD3DF;
+    --primary:#2E4BD0; --primary-soft:#EAEEFC;
+    --correct:#147A52; --correct-soft:#E4F3EB;
+    --retry:#B42318; --retry-soft:#FBEBE9;
+    --hint:#8A5A00; --hint-soft:#FCF2DC;
+    --serif:'Spectral','Frank Ruhl Libre',Georgia,serif;
+    --sans:'IBM Plex Sans','Heebo',system-ui,sans-serif;
+    --mono:'IBM Plex Mono','Heebo',ui-monospace,monospace;
+    --radius:12px;
+    --shadow:0 1px 2px rgba(26,34,48,.04),0 8px 24px rgba(26,34,48,.06);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; color:var(--ink); background:var(--paper);
+    font-family:var(--sans); line-height:1.5;
+    /* faint quad-ruled paper */
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+                     linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:26px 26px; background-position:-1px -1px;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:48px 22px 96px}
+
+  /* ---------- Problem header ---------- */
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--primary); margin:0 0 10px}
+  h1.title{font-family:var(--serif); font-weight:600; font-size:30px;
+    line-height:1.2; margin:0 0 18px; letter-spacing:-.01em}
+  .statement{font-family:var(--serif); font-size:19px; color:#27313f;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow)}
+  .statement .math-display{margin:14px 0 4px}
+
+  /* ---------- Method recap (collapsible recipe) ---------- */
+  .method{margin:16px 0 4px}
+  .method-toggle{display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:12px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted); background:none;
+    border:1px dashed var(--rail); border-radius:999px; padding:7px 14px;
+    cursor:pointer; transition:color .15s,border-color .15s}
+  .method-toggle:hover{color:var(--primary); border-color:var(--primary)}
+  .method-toggle .chev{transition:transform .2s}
+  .method[open] .chev{transform:rotate(90deg)}
+  .method-body{margin-top:12px; background:var(--surface);
+    border:1px solid var(--line); border-inline-start:3px solid var(--primary);
+    border-radius:10px; padding-block:6px; padding-inline-start:24px; padding-inline-end:20px}
+  .method-body ol{margin:14px 0; padding-inline-start:20px}
+  .method-body li{margin:7px 0; color:#33404f}
+
+  /* ---------- The ledger / rail ---------- */
+  .ledger{position:relative; margin:34px 0 0; padding-inline-start:42px; list-style:none}
+  .ledger::before{content:""; position:absolute; inset-inline-start:13px; top:6px; bottom:14px;
+    width:2px; background:var(--rail); border-radius:2px}
+  .step{position:relative; margin:0 0 18px}
+  .node{position:absolute; inset-inline-start:-42px; top:2px; width:28px; height:28px;
+    border-radius:50%; background:var(--surface); border:2px solid var(--rail);
+    display:grid; place-items:center; font-family:var(--mono); font-size:12px;
+    color:var(--faint); z-index:1; transition:all .25s}
+  .step[data-state="active"] .node{border-color:var(--primary); color:var(--primary);
+    box-shadow:0 0 0 5px var(--primary-soft)}
+  .step[data-state="solved"] .node{border-color:var(--correct);
+    background:var(--correct); color:#fff}
+  .step[data-state="revealed"] .node{border-color:var(--faint);
+    background:var(--faint); color:#fff}
+
+  .card{background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow);
+    transition:opacity .25s,filter .25s}
+  .step[data-state="locked"] .card{opacity:.45; filter:saturate(.4)}
+  .step[data-state="active"] .card{border-color:#C9D3EE; box-shadow:0 2px 4px rgba(46,75,208,.06),0 12px 30px rgba(46,75,208,.08)}
+
+  .prompt{font-family:var(--serif); font-size:18px; color:#222c39; margin:0 0 4px}
+  .locked-note{display:none; font-family:var(--mono); font-size:12px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--faint)}
+  .step[data-state="locked"] .locked-note{display:block}
+
+  /* committed answer line (after solving) */
+  .committed{display:none; align-items:baseline; gap:10px; margin-top:10px;
+    font-size:18px}
+  .committed .lbl{font-family:var(--mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted)}
+  .step[data-state="solved"] .committed,
+  .step[data-state="revealed"] .committed{display:flex}
+  .step[data-state="solved"] .committed .lbl{color:var(--correct)}
+
+  /* input area */
+  .work{margin-top:14px}
+  .step[data-state="solved"] .work,
+  .step[data-state="revealed"] .work,
+  .step[data-state="locked"] .work{display:none}
+
+  /* MathLive field, restyled to fit the notebook */
+  math-field{
+    font-size:1.3rem; width:100%; padding:10px 12px; direction:ltr; text-align:left;
+    background:#FCFDFE; border:1.5px solid var(--line); border-radius:10px;
+    --caret-color:var(--primary); --selection-background-color:var(--primary-soft);
+    --contains-highlight-background-color:transparent; --primary-color:var(--primary);
+  }
+  math-field:focus-within{border-color:var(--primary);
+    box-shadow:0 0 0 4px var(--primary-soft); outline:none}
+  math-field::part(menu-toggle){display:none}
+  .field-shake{animation:shake .32s}
+  @keyframes shake{10%,90%{transform:translateX(-1px)}30%,70%{transform:translateX(3px)}
+    50%{transform:translateX(-4px)}}
+
+  /* value field tag */
+  .field-tag{font-family:var(--mono); font-size:11px; color:var(--faint);
+    margin-bottom:6px; letter-spacing:.06em; text-transform:uppercase}
+
+  /* choices */
+  .choices{display:flex; flex-direction:column; gap:8px}
+  .choice{text-align:start; font-family:var(--serif); font-size:17px; color:#27313f;
+    background:#FCFDFE; border:1.5px solid var(--line); border-radius:10px;
+    padding:12px 16px; cursor:pointer; transition:border-color .15s,background .15s}
+  .choice:hover{border-color:var(--primary); background:var(--primary-soft)}
+  .choice[aria-pressed="true"]{border-color:var(--primary); background:var(--primary-soft)}
+
+  /* buttons */
+  .actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; align-items:center}
+  button{font-family:var(--sans); font-size:14px; cursor:pointer; border-radius:9px;
+    border:1px solid transparent; padding:9px 16px; font-weight:500; transition:all .15s}
+  .btn-check{background:var(--primary); color:#fff}
+  .btn-check:hover{background:#2740b8}
+  .btn-ghost{background:transparent; color:var(--muted); border-color:var(--line)}
+  .btn-ghost:hover{color:var(--ink); border-color:var(--rail)}
+  button:disabled{opacity:.5; cursor:default}
+
+  /* feedback + hints + explanation */
+  .feedback{font-size:14px; margin-inline-start:2px; min-height:18px}
+  .feedback.ok{color:var(--correct)}
+  .feedback.no{color:var(--retry)}
+  .hint{margin-top:12px; background:var(--hint-soft); border:1px solid #F0DFB0;
+    border-radius:9px; padding:11px 14px; font-size:15px; color:#5e3f06}
+  .hint .htag{font-family:var(--mono); font-size:11px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--hint); display:block; margin-bottom:3px}
+  .explain{margin-top:12px; font-size:15px; color:#39434f;
+    border-inline-start:3px solid var(--rail); padding-block:2px; padding-inline-start:14px; display:none}
+  .step[data-state="solved"] .explain,
+  .step[data-state="revealed"] .explain{display:block}
+
+  /* ---------- Theorems panel + per-step exam citations ---------- */
+  .theorems{margin-top:10px}
+  .thm-body{display:flex; flex-direction:column; gap:14px; padding-top:14px; padding-bottom:14px}
+  .thm{border-inline-start:3px solid var(--rail); padding-inline-start:14px}
+  .thm.crucial{border-inline-start-color:var(--hint)}
+  .thm-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; margin-bottom:3px}
+  .thm-name{font-family:var(--serif); font-weight:600; font-size:17px; color:#222c39}
+  .thm-stmt{font-size:15.5px; color:#39434f}
+  .badge{font-family:var(--mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+    padding:2px 8px; border-radius:999px; background:var(--hint-soft); color:var(--hint);
+    border:1px solid #F0DFB0; white-space:nowrap}
+  /* citation strip on a step, shown once solved */
+  .cite-slot{display:none; margin-top:12px}
+  .step[data-state="solved"] .cite-slot,
+  .step[data-state="revealed"] .cite-slot{display:block}
+  .cite{background:var(--hint-soft); border:1px solid #F0DFB0; border-radius:10px; padding:11px 14px}
+  .cite-lbl{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--hint); display:flex; align-items:center; gap:6px; margin-bottom:7px}
+  .cite-item{font-size:15px; color:#4a3a12; margin-top:5px}
+  .cite-item .nm{font-family:var(--serif); font-weight:600; color:#3a2e0a}
+  .cite-item .req{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.05em;
+    color:#fff; background:var(--hint); border-radius:4px; padding:1px 6px; margin-inline-start:6px}
+
+  /* progress / completion */
+  .progress{position:sticky; bottom:0; margin-top:30px; padding:14px 0 0;
+    background:linear-gradient(transparent,var(--paper) 30%)}
+  .bar{height:6px; background:var(--line); border-radius:6px; overflow:hidden}
+  .bar > i{display:block; height:100%; width:0; background:var(--primary);
+    border-radius:6px; transition:width .4s ease}
+  .pstat{font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:8px;
+    display:flex; justify-content:space-between; align-items:center}
+  .pstat button{padding:5px 11px; font-size:12px}
+  .done{display:none; margin-top:18px; background:var(--correct-soft);
+    border:1px solid #BFE3CC; border-radius:var(--radius); padding:16px 20px;
+    font-family:var(--serif); font-size:18px; color:#0f5d3f}
+
+  .math-display{text-align:center; font-size:1.18em}
+  /* Every math span is an isolated LTR island, so RTL (Hebrew) text around it
+     never reorders the math and the math never disturbs the sentence. */
+  .m-ltr{direction:ltr; unicode-bidi:isolate}
+  .math-display.m-ltr{display:block}
+
+  /* ---------- Figures: diagrams, plots, bar charts ---------- */
+  .figure{margin:16px 0 2px; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); padding:14px 16px 12px; box-shadow:var(--shadow)}
+  .figure svg{display:block; width:100%; height:auto; overflow:visible; direction:ltr}
+  .figure svg text{font-family:var(--mono); font-size:11px; fill:var(--faint)}
+  .figure .fig-cap{font-family:var(--sans); font-size:13px; color:var(--muted);
+    margin-top:9px; text-align:center; line-height:1.45}
+  .statement-figure{margin-top:14px}
+  .fig-slot{margin-top:6px}
+  .step[data-state="locked"] .fig-slot{display:none}
+  .fig-grid line{stroke:var(--grid); stroke-width:1}
+  .fig-axis line{stroke:var(--rail); stroke-width:1.5}
+  .fig-curve{fill:none; stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round}
+  .fig-marker line{stroke:var(--muted); stroke-width:1.5}
+  .fig-legend{display:flex; flex-wrap:wrap; gap:16px; justify-content:center; margin-top:8px}
+  .fig-legend span{font-family:var(--sans); font-size:12.5px; color:var(--muted);
+    display:inline-flex; align-items:center; gap:7px}
+  .fig-legend i{width:16px; height:3px; border-radius:2px; display:inline-block}
+  .fig-controls{margin-top:13px; display:flex; flex-direction:column; gap:10px; direction:ltr}
+  .fig-controls .ctl{display:grid; grid-template-columns:minmax(28px,auto) 1fr 46px;
+    gap:12px; align-items:center}
+  .fig-controls label{font-family:var(--mono); font-size:13px; color:var(--muted)}
+  .fig-controls output{font-family:var(--mono); font-size:12px; color:var(--ink); text-align:right}
+  .fig-controls input[type=range]{accent-color:var(--primary); width:100%; height:4px}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+  @media (max-width:520px){.wrap{padding:30px 16px 80px} h1.title{font-size:25px}
+    .statement{font-size:17px} .ledger{padding-inline-start:36px} .node{inset-inline-start:-36px}
+    .ledger::before{inset-inline-start:11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow" id="topic"></p>
+  <h1 class="title" id="title"></h1>
+  <div class="statement" id="statement"></div>
+
+  <details class="method" id="method">
+    <summary class="method-toggle"><span class="chev">▸</span> <span>Method</span></summary>
+    <div class="method-body"><ol id="method-list"></ol></div>
+  </details>
+
+  <details class="method theorems" id="theorems">
+    <summary class="method-toggle"><span class="chev">▸</span> <span>Theorems</span></summary>
+    <div class="method-body thm-body" id="thm-list"></div>
+  </details>
+
+  <ol class="ledger" id="ledger"></ol>
+
+  <div class="done" id="done">Derivation complete. Nicely done.</div>
+
+  <div class="progress">
+    <div class="bar"><i id="bar-fill"></i></div>
+    <div class="pstat">
+      <span id="pstat-text"></span>
+      <button class="btn-ghost" id="reset">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { MathfieldElement, convertLatexToMarkup } from 'https://esm.run/mathlive';
+import { ComputeEngine } from 'https://esm.run/@cortex-js/compute-engine@0.62.0';
+
+/* ===========================================================================
+   GUIDE  —  This is the ONLY part that changes per problem.
+   Replace the object below to author a new guide. See SKILL.md for the schema.
+   =========================================================================== */
+const GUIDE = {
+  topic: "אלקטרומגנטיות · אנאיזוטרופיה גיאומטרית",
+  title: "יחס ההתנגדויות \\(R_x/R_y\\) בתיבה",
+  statement:
+    "תיבה במידות \\(a\\times 2a\\times 3a\\) (לאורך \\(x\\): \\(a\\); לאורך \\(y\\): \\(2a\\); לאורך \\(z\\): \\(3a\\)) " +
+    "עשויה מחומר בעל התנגדות סגולית \\(\\rho(x)=\\rho_0\\,e^{-x/a}\\). \\(R_x\\) היא ההתנגדות כאשר הזרם בכיוון \\(x\\), " +
+    "ו-\\(R_y\\) כאשר הזרם בכיוון \\(y\\). מהו היחס \\(\\dfrac{R_x}{R_y}\\)? \\[ \\frac{R_x}{R_y} = ? \\]",
+  figure: {
+    type: "svg",
+    caption: "התיבה \\(a\\times 2a\\times 3a\\); ההתנגדות הסגולית משתנה רק לאורך \\(x\\).",
+    svg: `<svg viewBox="0 0 320 230" xmlns="http://www.w3.org/2000/svg">
+      <path d="M70 80 L210 80 L260 50 L120 50 Z" fill="#D9E1FB" stroke="#2E4BD0" stroke-width="1.8"/>
+      <path d="M210 80 L210 180 L260 150 L260 50 Z" fill="#C3D0F5" stroke="#2E4BD0" stroke-width="1.8"/>
+      <path d="M70 80 L210 80 L210 180 L70 180 Z" fill="#EAEEFC" stroke="#2E4BD0" stroke-width="1.8"/>
+      <defs><marker id="ax8" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#1A2230"/></marker></defs>
+      <line x1="40" y1="200" x2="120" y2="200" stroke="#1A2230" stroke-width="1.5" marker-end="url(#ax8)"/>
+      <text x="124" y="204" fill="#1A2230" font-family="IBM Plex Mono, monospace" font-size="12">x</text>
+      <line x1="40" y1="200" x2="40" y2="120" stroke="#1A2230" stroke-width="1.5" marker-end="url(#ax8)"/>
+      <text x="34" y="114" fill="#1A2230" font-family="IBM Plex Mono, monospace" font-size="12">y</text>
+      <line x1="40" y1="200" x2="80" y2="170" stroke="#1A2230" stroke-width="1.5" marker-end="url(#ax8)"/>
+      <text x="84" y="170" fill="#1A2230" font-family="IBM Plex Mono, monospace" font-size="12">z</text>
+      <text x="140" y="74" fill="#5A6577" font-family="IBM Plex Mono, monospace" font-size="11">a</text>
+      <text x="216" y="135" fill="#5A6577" font-family="IBM Plex Mono, monospace" font-size="11">2a</text>
+      <text x="232" y="72" fill="#5A6577" font-family="IBM Plex Mono, monospace" font-size="11">3a</text>
+    </svg>`
+  },
+  method: [
+    "זרם בכיוון השינוי (\\(x\\)): פרוסות בטור — \\(R_x=\\dfrac{1}{A_x}\\displaystyle\\int_0^{a}\\rho(x)\\,dx\\), \\(A_x=2a\\cdot 3a\\).",
+    "זרם בניצב לשינוי (\\(y\\)): פרוסות במקביל — \\(G_y=\\dfrac{L_z}{L_y}\\displaystyle\\int_0^{a}\\dfrac{dx}{\\rho(x)}\\).",
+    "מחלקים \\(R_x/R_y\\)."
+  ],
+  theorems: [
+    { name:"מקביל לזרם → טור", statement:"כשהזרם מקביל לכיוון שבו \\(\\rho\\) משתנה: \\(R=\\dfrac{1}{A}\\int\\rho\\,dl\\) (אלמנטים בטור).", crucial:true },
+    { name:"ניצב לזרם → מקביל", statement:"כשהזרם מאונך לכיוון שבו \\(\\rho\\) משתנה: \\(G=\\int \\dfrac{dA_\\perp}{\\rho\\,L}\\) (פרוסות במקביל).", crucial:true }
+  ],
+  steps: [
+    { type:"expression", prompt:"חשבו את \\(R_x\\) (זרם בכיוון \\(x\\); שטח חתך \\(A_x=2a\\cdot 3a=6a^2\\)).", answer:"\\frac{\\rho_0(1-e^{-1})}{6a}",
+      cite:["מקביל לזרם → טור"],
+      hints:["\\(R_x=\\dfrac{1}{6a^2}\\displaystyle\\int_0^a \\rho_0 e^{-x/a}dx\\).","\\(\\int_0^a e^{-x/a}dx=a(1-e^{-1})\\)."],
+      explanation:"\\(R_x=\\dfrac{\\rho_0 a(1-e^{-1})}{6a^2}=\\dfrac{\\rho_0(1-e^{-1})}{6a}\\)." },
+    { type:"expression", prompt:"חשבו את \\(R_y\\) (זרם בכיוון \\(y\\), אורך \\(2a\\); פרוסות בקבוע \\(x\\) במקביל).", answer:"\\frac{2\\rho_0}{3a(e-1)}",
+      cite:["ניצב לזרם → מקביל"],
+      hints:["\\(G_y=\\dfrac{L_z}{L_y}\\displaystyle\\int_0^a \\dfrac{dx}{\\rho_0 e^{-x/a}}=\\dfrac{3a}{2a}\\cdot\\dfrac{1}{\\rho_0}\\int_0^a e^{x/a}dx\\).","\\(\\int_0^a e^{x/a}dx=a(e-1)\\), אז \\(G_y=\\dfrac{3a(e-1)}{2\\rho_0}\\)."],
+      explanation:"\\(R_y=1/G_y=\\dfrac{2\\rho_0}{3a(e-1)}\\)." },
+    { type:"expression", prompt:"מהו היחס \\(\\dfrac{R_x}{R_y}\\)? (פשטו ל-\\(\\tfrac14(e+e^{-1}-2)\\))", answer:"\\frac{1}{4}\\left(e+\\frac{1}{e}-2\\right)",
+      hints:["\\(\\dfrac{R_x}{R_y}=\\dfrac{\\rho_0(1-e^{-1})}{6a}\\cdot\\dfrac{3a(e-1)}{2\\rho_0}=\\tfrac14(1-e^{-1})(e-1)\\).","\\((1-e^{-1})(e-1)=e+e^{-1}-2\\)."],
+      explanation:"\\(\\dfrac{R_x}{R_y}=\\tfrac14(1-e^{-1})(e-1)=\\tfrac14\\!\\left(e+\\dfrac1e-2\\right)\\)." }
+  ]
+};
+
+/* ===========================================================================
+   ENGINE  —  fixed. Renders the guide, checks answers, drives the ledger.
+   =========================================================================== */
+
+// Independent, version-pinned Compute Engine (parses both the user's input and
+// the expected answer, so they are compared on identical footing). Pinned so the
+// page behaves exactly as tested, regardless of MathLive's bundled engine.
+const ce = new ComputeEngine();
+
+/* ---- localization + direction ----
+   UI strings for English and Hebrew (override any via GUIDE.ui). The page flows
+   RTL when GUIDE.dir==="rtl" or Hebrew text is detected; math stays LTR (see
+   mathText / .m-ltr). Choose strings by GUIDE.lang, else by detected language. */
+const STRINGS = {
+  en: {
+    methodTitle:"Method", check:"Check", hint:"Hint", showAnswer:"Show answer", reset:"Reset",
+    yourAnswer:"Your answer", lockedNote:"Locked — solve the step above to continue",
+    correct:"Correct.", retryExpr:"Not quite — try again.", retryChoice:"Not quite — try another.",
+    revealed:"Answer revealed.", numberHint:"Enter a number (fractions, roots, π all fine)",
+    done:"Derivation complete. Nicely done.", titleFallback:"Interactive Math Guide",
+    thmTitle:"Theorems & key results", crucialBadge:"cite in exam", requiredTag:"required",
+    citeLabel:"In your exam, justify this step by citing:",
+    hintN:(n)=>`Hint (${n})`, hintTag:(i)=>`Hint ${i}`,
+    progress:(s,r,n)=>`Solved ${s} · revealed ${r} · of ${n}`
+  },
+  he: {
+    methodTitle:"שיטה", check:"בדיקה", hint:"רמז", showAnswer:"הצג תשובה", reset:"איפוס",
+    yourAnswer:"התשובה שלך", lockedNote:"נעול — פתרו את השלב הקודם כדי להמשיך",
+    correct:"נכון.", retryExpr:"לא בדיוק — נסו שוב.", retryChoice:"לא בדיוק — נסו אפשרות אחרת.",
+    revealed:"התשובה נחשפה.", numberHint:"הקלידו מספר (שברים, שורשים, π — הכול תקין)",
+    done:"הפיתוח הושלם. כל הכבוד!", titleFallback:"מדריך מתמטי אינטראקטיבי",
+    thmTitle:"משפטים ותוצאות מפתח", crucialBadge:"לציטוט בבחינה", requiredTag:"חובה",
+    citeLabel:"בבחינה, נמקו שלב זה על־ידי ציטוט:",
+    hintN:(n)=>`רמז (${n})`, hintTag:(i)=>`רמז ${i}`,
+    progress:(s,r,n)=>`נפתרו ${s} · נחשפו ${r} · מתוך ${n}`
+  }
+};
+const HEB = /[\u0590-\u05FF]/;
+const isRTL = GUIDE.dir === 'rtl' ||
+  (GUIDE.dir !== 'ltr' && (HEB.test(GUIDE.statement||'') || HEB.test(GUIDE.title||'') ||
+    HEB.test((GUIDE.steps||[]).map(s=>s.prompt||'').join(''))));
+const LANG = GUIDE.lang || (isRTL ? 'he' : 'en');
+document.documentElement.setAttribute('lang', LANG);
+if (isRTL) document.documentElement.setAttribute('dir', 'rtl');
+const T = Object.assign({}, STRINGS[LANG] || STRINGS.en, GUIDE.ui || {});
+
+/* ---- render LaTeX-in-text safely: split on \[..\] and \(..\) ---- */
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function mathText(str){
+  if (str == null) return "";
+  let html = "", i = 0;
+  const re = /\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)/g; let m;
+  while ((m = re.exec(str))){
+    html += esc(str.slice(i, m.index));
+    if (m[1] !== undefined)
+      html += '<div class="math-display m-ltr">'+convertLatexToMarkup('\\displaystyle '+m[1])+'</div>';
+    else
+      html += '<span class="m-ltr">'+convertLatexToMarkup(m[2])+'</span>';
+    i = re.lastIndex;
+  }
+  html += esc(str.slice(i));
+  return html;
+}
+
+/* ---- numeric value out of a boxed expression ---- */
+function toNum(expr){
+  const n = expr.N();
+  let v = n.re;
+  if (typeof v !== 'number'){ const f = n.valueOf(); v = (typeof f === 'number') ? f : Number(f); }
+  return v;
+}
+
+/* ---- numeric sampling fallback for expression equality ---- */
+function sampleEqual(user, ans, extra){
+  const vars = Array.from(new Set([...(user.unknowns||[]), ...(ans.unknowns||[]), ...(extra||[])]));
+  let valid = 0, match = 0;
+  for (let k = 0; k < 16; k++){
+    const sub = {};
+    for (const v of vars) sub[v] = ce.box(2 + ((k*0.6131 + 0.137) % 4) + (k%3)*0.391);
+    let uv, av;
+    try { uv = toNum(user.subs(sub)); av = toNum(ans.subs(sub)); } catch(e){ continue; }
+    if (!isFinite(uv) || !isFinite(av)) continue;
+    valid++;
+    if (Math.abs(uv - av) <= 1e-6 * (1 + Math.abs(av))) match++;
+  }
+  return valid >= 3 && match === valid;
+}
+
+/* ---- normalise dimensional physical constants the engine reifies ----
+   The engine parses \varepsilon_0 and \mu_0 as unit-bearing quantities, which
+   breaks implicit multiplication (e.g. 3\varepsilon_0 becomes a tuple, not a
+   product). Remap them to plain symbols for CHECKING ONLY — display always uses
+   the original LaTeX, so the page still shows ε₀, μ₀. Applied identically to
+   the user's input and the expected answer, so they compare on equal footing
+   (this also makes \epsilon and \varepsilon interchangeable). Add more here if
+   another constant misbehaves. */
+function normalizeForCheck(latex){
+  return latex
+    .replace(/\\varepsilon_\{0\}|\\epsilon_\{0\}|\\varepsilon_0|\\epsilon_0/g, '\\zeta_{0}')
+    .replace(/\\mu_\{0\}|\\mu_0/g, '\\eta_{0}');
+}
+
+/* ---- check one EXPRESSION answer (handles equations too) ---- */
+function splitEq(L){ const i = L.indexOf('='); return i < 0 ? L : `(${L.slice(0,i)})-(${L.slice(i+1)})`; }
+function checkExpression(userLatex, answerLatex, extra){
+  if (!userLatex || !userLatex.trim()) return false;
+  const u0 = normalizeForCheck(userLatex), a0 = normalizeForCheck(answerLatex);
+  const isEq = a0.includes('=') || u0.includes('=');
+  const uL = isEq ? splitEq(u0) : u0;
+  const aL = isEq ? splitEq(a0) : a0;
+  let user, ans;
+  try { user = ce.parse(uL); ans = ce.parse(aL); } catch(e){ return false; }
+  if (user.isValid === false) return false;
+  // symbolic first
+  let eq = ans.isEqual(user);
+  if (eq === true) return true;
+  if (isEq){ // an equation is also satisfied by the negated difference
+    try { if (ans.isEqual(ce.box(['Negate', user])) === true) return true; } catch(e){}
+  }
+  // numeric sampling fallback (covers eq === undefined and confirms eq === false)
+  if (sampleEqual(user, ans, extra)) return true;
+  if (isEq && sampleEqual(ce.box(['Negate', user]), ans, extra)) return true;
+  return false;
+}
+
+/* ---- check a VALUE answer (numeric, with tolerance) ---- */
+function checkValue(userLatex, target, tol){
+  if (!userLatex || !userLatex.trim()) return false;
+  let v;
+  try { v = toNum(ce.parse(normalizeForCheck(userLatex))); } catch(e){ return false; }
+  if (!isFinite(v)) return false;
+  return Math.abs(v - target) <= (tol ?? 1e-6) * (1 + Math.abs(target));
+}
+
+/* ---- figures: diagrams (raw svg), function plots, bar charts ----
+   A figure spec is attached to GUIDE.figure (under the statement) or to any
+   step as step.figure. Three kinds:
+     { type:"svg",  svg:"<svg>…</svg>", caption }                 bespoke diagram
+     { type:"plot", xRange,[yRange],xLabel,yLabel, curves:[{fn,label,color,dashed}],
+                    markers:[{x,label}], points:[{x,y,label}], params:[{name,min,max,value,step,label}], caption }
+     { type:"bars", bars:[{label,value,color}], yLabel, caption }
+   Curve/marker/point coords are plain numbers or functions of (x, params).
+   In-SVG labels are plain text (use unicode); captions/control labels accept LaTeX. */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const FIG_COLORS = { ink:'#1A2230', primary:'#2E4BD0', correct:'#147A52',
+  hint:'#8A5A00', retry:'#B42318', muted:'#5A6577', faint:'#97A0AE' };
+function figColor(c){ return FIG_COLORS[c] || c || FIG_COLORS.primary; }
+function svgEl(name, attrs){ const e=document.createElementNS(SVGNS,name);
+  for(const k in (attrs||{})) e.setAttribute(k, attrs[k]); return e; }
+function fmtNum(v){ if(v===0) return '0'; if(Math.abs(v)>=100) return String(Math.round(v));
+  const r=Math.round(v*100)/100; return String(r); }
+
+function renderFigure(spec){
+  if(!spec) return null;
+  const fig = document.createElement('div'); fig.className='figure';
+  if(spec.type==='svg'){
+    fig.insertAdjacentHTML('afterbegin', spec.svg || '');
+    const s=fig.querySelector('svg');
+    if(s){ s.removeAttribute('width'); s.removeAttribute('height');
+      if(!s.getAttribute('preserveAspectRatio')) s.setAttribute('preserveAspectRatio','xMidYMid meet'); }
+  } else if(spec.type==='bars'){
+    fig.appendChild(renderBars(spec));
+  } else {
+    fig.appendChild(renderPlot(spec));
+  }
+  if(spec.caption){ const c=document.createElement('div'); c.className='fig-cap';
+    c.innerHTML=mathText(spec.caption); fig.appendChild(c); }
+  return fig;
+}
+
+function renderPlot(spec){
+  const W=640,H=380, mL=52,mR=18,mT=18,mB=42, plotW=W-mL-mR, plotH=H-mT-mB;
+  const xr = spec.xRange || [0,1];
+  const params0 = {}; (spec.params||[]).forEach(p=>params0[p.name]=p.value);
+  const Ns=280;
+  const sample=(fn,p)=>{ const pts=[];
+    for(let i=0;i<=Ns;i++){ const x=xr[0]+(xr[1]-xr[0])*i/Ns; let y; try{y=fn(x,p);}catch(e){y=NaN;}
+      pts.push([x,(typeof y==='number'&&isFinite(y))?y:NaN]); } return pts; };
+  let yr = spec.yRange;
+  if(!yr){ let lo=Infinity,hi=-Infinity;
+    (spec.curves||[]).forEach(c=>sample(c.fn,params0).forEach(([,y])=>{ if(isFinite(y)){ if(y<lo)lo=y; if(y>hi)hi=y; }}));
+    if(!isFinite(lo)){lo=0;hi=1;} const pad=(hi-lo)*0.12||0.5; yr=[lo<0?lo-pad:0, hi+pad]; }
+  const X=x=>mL+(x-xr[0])/(xr[1]-xr[0])*plotW;
+  const Y=y=>mT+plotH-(y-yr[0])/(yr[1]-yr[0])*plotH;
+
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`, role:'img'});
+  const nGX=5,nGY=4;
+  const grid=svgEl('g',{class:'fig-grid'});
+  for(let i=0;i<=nGX;i++){ const x=xr[0]+(xr[1]-xr[0])*i/nGX; grid.appendChild(svgEl('line',{x1:X(x),y1:mT,x2:X(x),y2:mT+plotH})); }
+  for(let i=0;i<=nGY;i++){ const y=yr[0]+(yr[1]-yr[0])*i/nGY; grid.appendChild(svgEl('line',{x1:mL,y1:Y(y),x2:mL+plotW,y2:Y(y)})); }
+  svg.appendChild(grid);
+  const axis=svgEl('g',{class:'fig-axis'});
+  axis.appendChild(svgEl('line',{x1:mL,y1:mT+plotH,x2:mL+plotW,y2:mT+plotH}));
+  axis.appendChild(svgEl('line',{x1:mL,y1:mT,x2:mL,y2:mT+plotH}));
+  for(let i=0;i<=nGX;i++){ const x=xr[0]+(xr[1]-xr[0])*i/nGX; const t=svgEl('text',{x:X(x),y:mT+plotH+17,'text-anchor':'middle'}); t.textContent=fmtNum(x); axis.appendChild(t); }
+  for(let i=0;i<=nGY;i++){ const y=yr[0]+(yr[1]-yr[0])*i/nGY; const t=svgEl('text',{x:mL-8,y:Y(y)+4,'text-anchor':'end'}); t.textContent=fmtNum(y); axis.appendChild(t); }
+  if(spec.xLabel){ const t=svgEl('text',{x:mL+plotW,y:mT+plotH+30,'text-anchor':'end',style:'font-style:italic'}); t.textContent=spec.xLabel; axis.appendChild(t); }
+  if(spec.yLabel){ const t=svgEl('text',{x:mL-44,y:mT-5,'text-anchor':'start',style:'font-style:italic'}); t.textContent=spec.yLabel; axis.appendChild(t); }
+  svg.appendChild(axis);
+  const dyn=svgEl('g'); svg.appendChild(dyn);
+
+  const pathFor=pts=>{ let d='',pen=false;
+    pts.forEach(([x,y])=>{ if(isNaN(y)){ pen=false; return; }
+      const yy=Math.max(yr[0],Math.min(yr[1],y));
+      d += (pen?'L':'M')+X(x).toFixed(1)+' '+Y(yy).toFixed(1)+' '; pen=true; }); return d; };
+  function draw(p){
+    dyn.textContent='';
+    (spec.markers||[]).forEach(mk=>{ const xv=(typeof mk.x==='function')?mk.x(p):mk.x;
+      const g=svgEl('g',{class:'fig-marker'});
+      const ln=svgEl('line',{x1:X(xv),y1:mT,x2:X(xv),y2:mT+plotH}); ln.setAttribute('stroke-dasharray','4 4'); g.appendChild(ln);
+      if(mk.label){ const t=svgEl('text',{x:X(xv)+5,y:mT+12,fill:FIG_COLORS.muted}); t.textContent=mk.label; g.appendChild(t); }
+      dyn.appendChild(g); });
+    (spec.curves||[]).forEach(c=>{ const path=svgEl('path',{class:'fig-curve', d:pathFor(sample(c.fn,p)), stroke:figColor(c.color)});
+      if(c.dashed) path.setAttribute('stroke-dasharray','7 5'); dyn.appendChild(path); });
+    (spec.points||[]).forEach(pt=>{ const xv=(typeof pt.x==='function')?pt.x(p):pt.x, yv=(typeof pt.y==='function')?pt.y(p):pt.y;
+      const g=svgEl('g'); g.appendChild(svgEl('circle',{cx:X(xv),cy:Y(yv),r:4.5,fill:figColor(pt.color||'primary')}));
+      if(pt.label){ const t=svgEl('text',{x:X(xv)+8,y:Y(yv)-7,fill:FIG_COLORS.ink}); t.textContent=pt.label; g.appendChild(t); }
+      dyn.appendChild(g); });
+  }
+  draw(params0);
+
+  const box=document.createElement('div'); box.appendChild(svg);
+  const labeled=(spec.curves||[]).filter(c=>c.label);
+  if(labeled.length>1 || (spec.legend && labeled.length)){ const lg=document.createElement('div'); lg.className='fig-legend';
+    labeled.forEach(c=>{ const s=document.createElement('span'); const i=document.createElement('i');
+      i.style.background=figColor(c.color); s.appendChild(i); s.appendChild(document.createTextNode(c.label)); lg.appendChild(s); });
+    box.appendChild(lg); }
+  if((spec.params||[]).length){ const ctrls=document.createElement('div'); ctrls.className='fig-controls'; const p={...params0};
+    spec.params.forEach(pp=>{ const row=document.createElement('div'); row.className='ctl';
+      const lab=document.createElement('label'); lab.innerHTML=mathText(pp.label||pp.name);
+      const inp=document.createElement('input'); inp.type='range'; inp.min=pp.min; inp.max=pp.max;
+      inp.step=pp.step||((pp.max-pp.min)/100); inp.value=pp.value;
+      const out=document.createElement('output'); out.textContent=fmtNum(pp.value);
+      inp.addEventListener('input',()=>{ p[pp.name]=parseFloat(inp.value); out.textContent=fmtNum(p[pp.name]); draw(p); });
+      row.append(lab,inp,out); ctrls.appendChild(row); });
+    box.appendChild(ctrls); }
+  return box;
+}
+
+function renderBars(spec){
+  const bars=spec.bars||[]; const W=640,H=330,mL=46,mR=16,mT=20,mB=44, plotW=W-mL-mR, plotH=H-mT-mB;
+  const maxV=(Math.max(0,...bars.map(b=>b.value))*1.15)||1;
+  const Y=v=>mT+plotH-(v/maxV)*plotH; const n=bars.length||1, bw=plotW/n*0.62;
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`, role:'img'});
+  const grid=svgEl('g',{class:'fig-grid'}); const axis=svgEl('g',{class:'fig-axis'}); const nGY=4;
+  for(let i=0;i<=nGY;i++){ const v=maxV*i/nGY; grid.appendChild(svgEl('line',{x1:mL,y1:Y(v),x2:mL+plotW,y2:Y(v)}));
+    const t=svgEl('text',{x:mL-8,y:Y(v)+4,'text-anchor':'end'}); t.textContent=fmtNum(v); axis.appendChild(t); }
+  svg.appendChild(grid);
+  axis.appendChild(svgEl('line',{x1:mL,y1:mT+plotH,x2:mL+plotW,y2:mT+plotH}));
+  axis.appendChild(svgEl('line',{x1:mL,y1:mT,x2:mL,y2:mT+plotH}));
+  const g=svgEl('g');
+  bars.forEach((b,i)=>{ const cx=mL+plotW*(i+0.5)/n, x=cx-bw/2, y=Y(b.value), h=mT+plotH-y;
+    g.appendChild(svgEl('rect',{x:x,y:y,width:bw,height:h,rx:4,fill:figColor(b.color||'primary')}));
+    const lt=svgEl('text',{x:cx,y:mT+plotH+17,'text-anchor':'middle',fill:FIG_COLORS.muted}); lt.textContent=b.label; axis.appendChild(lt);
+    const vt=svgEl('text',{x:cx,y:y-6,'text-anchor':'middle',fill:FIG_COLORS.ink}); vt.textContent=fmtNum(b.value); g.appendChild(vt); });
+  if(spec.yLabel){ const t=svgEl('text',{x:13,y:mT+plotH/2,'text-anchor':'middle',transform:`rotate(-90 13 ${mT+plotH/2})`}); t.textContent=spec.yLabel; axis.appendChild(t); }
+  svg.appendChild(axis); svg.appendChild(g); return svg;
+}
+
+/* ---- DOM build ---- */
+const $ = (id)=>document.getElementById(id);
+$('topic').textContent = GUIDE.topic || "";
+$('title').innerHTML = mathText(GUIDE.title || T.titleFallback);
+$('statement').innerHTML = mathText(GUIDE.statement || "");
+$('done').textContent = T.done;
+$('reset').textContent = T.reset;
+document.querySelector('#method summary span:last-of-type').textContent = T.methodTitle;
+if (GUIDE.figure){ const f = renderFigure(GUIDE.figure);
+  if (f){ f.classList.add('statement-figure'); $('statement').insertAdjacentElement('afterend', f); } }
+if (Array.isArray(GUIDE.method) && GUIDE.method.length){
+  $('method-list').innerHTML = GUIDE.method.map(s=>`<li>${mathText(s)}</li>`).join('');
+} else { $('method').style.display = 'none'; }
+
+// Theorems & key results: the named results a student should cite in an exam.
+const THM = {};
+(GUIDE.theorems||[]).forEach(t=>{ THM[t.name] = t; });
+if (GUIDE.theorems && GUIDE.theorems.length){
+  document.querySelector('#theorems summary span:last-of-type').textContent = T.thmTitle;
+  $('thm-list').innerHTML = GUIDE.theorems.map(t=>{
+    const badge = t.crucial ? `<span class="badge">${T.crucialBadge}</span>` : '';
+    return `<div class="thm${t.crucial?' crucial':''}">`
+      + `<div class="thm-head"><span class="thm-name">${mathText(t.name)}</span>${badge}</div>`
+      + `<div class="thm-stmt">${mathText(t.statement)}</div></div>`;
+  }).join('');
+} else { $('theorems').style.display = 'none'; }
+
+const N = GUIDE.steps.length;
+const states = GUIDE.steps.map((_,i)=> i===0 ? 'active' : 'locked');
+const ledger = $('ledger');
+const stepEls = [];
+
+GUIDE.steps.forEach((step, idx)=>{
+  const li = document.createElement('li');
+  li.className = 'step'; li.dataset.state = states[idx];
+  li.innerHTML = `
+    <div class="node">${idx+1}</div>
+    <div class="card">
+      <div class="prompt"></div>
+      <div class="locked-note">Locked — solve the step above to continue</div>
+      <div class="fig-slot"></div>
+      <div class="committed"><span class="lbl">Your answer</span><span class="cval"></span></div>
+      <div class="work"></div>
+      <div class="explain"></div>
+      <div class="cite-slot"></div>
+    </div>`;
+  ledger.appendChild(li);
+  stepEls.push(li);
+  buildWork(step, idx, li);
+});
+
+function setState(idx, s){ states[idx] = s; stepEls[idx].dataset.state = s; }
+function nodeCheck(idx){ stepEls[idx].querySelector('.node').innerHTML = '✓'; }
+
+function buildWork(step, idx, li){
+  const prompt = li.querySelector('.prompt');
+  const work = li.querySelector('.work');
+  const explain = li.querySelector('.explain');
+  prompt.innerHTML = mathText(step.prompt);
+  explain.innerHTML = mathText(step.explanation || "");
+  li.querySelector('.locked-note').textContent = T.lockedNote;
+  li.querySelector('.committed .lbl').textContent = T.yourAnswer;
+  if (step.figure){ const f = renderFigure(step.figure); if (f) li.querySelector('.fig-slot').appendChild(f); }
+  if (Array.isArray(step.cite) && step.cite.length){
+    const items = step.cite.map(nm=>{
+      const t = THM[nm] || { name:nm, statement:'', crucial:false };
+      const req = t.crucial ? `<span class="req">${T.requiredTag}</span>` : '';
+      const stmt = t.statement ? ` — ${mathText(t.statement)}` : '';
+      return `<div class="cite-item"><span class="nm">${mathText(t.name)}</span>${req}${stmt}</div>`;
+    }).join('');
+    li.querySelector('.cite-slot').innerHTML =
+      `<div class="cite"><div class="cite-lbl">⚑ ${T.citeLabel}</div>${items}</div>`;
+  }
+
+  let hintIdx = 0;
+  const feedback = document.createElement('div'); feedback.className = 'feedback';
+
+  function solve(revealed){
+    const committed = li.querySelector('.committed .cval');
+    committed.innerHTML = revealed
+      ? answerMarkup(step)
+      : currentAnswerMarkup(step);
+    setState(idx, revealed ? 'revealed' : 'solved');
+    nodeCheck(idx);
+    if (idx+1 < N && states[idx+1] === 'locked'){
+      setState(idx+1, 'active');
+      const next = stepEls[idx+1];
+      next.scrollIntoView({behavior:'smooth', block:'center'});
+      const f = next.querySelector('math-field'); if (f) setTimeout(()=>f.focus(), 350);
+    }
+    updateProgress();
+  }
+
+  // ---- input by type ----
+  if (step.type === 'choice'){
+    const box = document.createElement('div'); box.className = 'choices';
+    step.choices.forEach((c, ci)=>{
+      const b = document.createElement('button');
+      b.className = 'choice'; b.type = 'button';
+      b.innerHTML = mathText(c);
+      b.onclick = ()=>{
+        if (ci === step.answer){ feedback.textContent = T.correct; feedback.className='feedback ok';
+          step._picked = ci; solve(false); }
+        else { feedback.textContent = T.retryChoice; feedback.className='feedback no';
+          b.style.borderColor = 'var(--retry)'; }
+      };
+      box.appendChild(b);
+    });
+    work.appendChild(box);
+    const actions = document.createElement('div'); actions.className='actions';
+    actions.appendChild(revealBtn(step, solve, feedback));
+    work.appendChild(actions);
+    work.appendChild(feedback);
+  } else {
+    // expression or value -> MathLive field
+    if (step.type === 'value'){
+      const tag = document.createElement('div'); tag.className='field-tag';
+      tag.textContent = T.numberHint;
+      work.appendChild(tag);
+    }
+    const mf = new MathfieldElement();
+    mf.value = step.placeholder ? '' : '';
+    mf.setAttribute('dir','ltr');
+    if (step.placeholder) mf.setAttribute('placeholder', step.placeholder);
+    mf.mathVirtualKeyboardPolicy = 'manual';
+    work.appendChild(mf);
+
+    const actions = document.createElement('div'); actions.className='actions';
+    const check = document.createElement('button');
+    check.className='btn-check'; check.textContent=T.check;
+    const doCheck = ()=>{
+      const ok = step.type === 'value'
+        ? checkValue(mf.value, step.answer, step.tol)
+        : checkExpression(mf.value, step.answer, step.vars);
+      if (ok){ feedback.textContent=T.correct; feedback.className='feedback ok';
+        step._last = mf.value; solve(false); }
+      else { feedback.textContent=T.retryExpr; feedback.className='feedback no';
+        mf.classList.remove('field-shake'); void mf.offsetWidth; mf.classList.add('field-shake'); }
+    };
+    check.onclick = doCheck;
+    mf.addEventListener('keydown', (e)=>{ if (e.key==='Enter'){ e.preventDefault(); doCheck(); }});
+
+    const hintBtn = document.createElement('button');
+    hintBtn.className='btn-ghost';
+    const nHints = (step.hints||[]).length;
+    hintBtn.textContent = nHints ? T.hintN(nHints) : T.hint;
+    if (!nHints) hintBtn.disabled = true;
+    hintBtn.onclick = ()=>{
+      if (hintIdx >= nHints) return;
+      const h = document.createElement('div'); h.className='hint';
+      h.innerHTML = `<span class="htag">${T.hintTag(hintIdx+1)}</span>${mathText(step.hints[hintIdx])}`;
+      work.insertBefore(h, feedback);
+      hintIdx++;
+      hintBtn.textContent = hintIdx>=nHints ? T.hint : T.hintN(nHints-hintIdx);
+      if (hintIdx>=nHints) hintBtn.disabled = true;
+    };
+
+    actions.appendChild(check);
+    actions.appendChild(hintBtn);
+    actions.appendChild(revealBtn(step, solve, feedback));
+    work.appendChild(actions);
+    work.appendChild(feedback);
+    step._field = ()=>mf.value;
+  }
+}
+
+function revealBtn(step, solve, feedback){
+  const b = document.createElement('button'); b.className='btn-ghost';
+  b.textContent=T.showAnswer;
+  b.onclick = ()=>{ feedback.textContent=T.revealed; feedback.className='feedback';
+    solve(true); };
+  return b;
+}
+function wrapLTR(markup){ return '<span class="m-ltr">'+markup+'</span>'; }
+function answerMarkup(step){
+  if (step.type === 'choice') return mathText(step.choices[step.answer]);
+  if (step.type === 'value') return wrapLTR(convertLatexToMarkup(String(step.answer)));
+  return wrapLTR(convertLatexToMarkup(step.answer));
+}
+function currentAnswerMarkup(step){
+  if (step.type === 'choice') return mathText(step.choices[step._picked]);
+  const v = step._field ? step._field() : (step._last||'');
+  return v ? wrapLTR(convertLatexToMarkup(v)) : answerMarkup(step);
+}
+
+/* ---- progress ---- */
+function updateProgress(){
+  const solved = states.filter(s=>s==='solved').length;
+  const revealed = states.filter(s=>s==='revealed').length;
+  const done = solved + revealed;
+  $('bar-fill').style.width = (100*done/N)+'%';
+  $('pstat-text').textContent = T.progress(solved, revealed, N);
+  $('done').style.display = (done===N) ? 'block' : 'none';
+}
+updateProgress();
+
+$('reset').onclick = ()=> location.reload();
+</script>
+</body>
+</html>
