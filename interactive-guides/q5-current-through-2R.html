@@ -47,10 +47,12 @@
     text-transform:uppercase; color:var(--primary); margin:0 0 10px}
   h1.title{font-family:var(--serif); font-weight:600; font-size:30px;
     line-height:1.2; margin:0 0 18px; letter-spacing:-.01em}
-  .statement{font-family:var(--serif); font-size:19px; color:#27313f;
+  .statement{font-family:var(--serif); font-size:19px; line-height:1.85; color:#27313f;
     background:var(--surface); border:1px solid var(--line);
-    border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow)}
-  .statement .math-display{margin:14px 0 4px}
+    border-radius:var(--radius); padding:24px 26px; box-shadow:var(--shadow)}
+  .statement br{display:block; content:""; margin-top:8px}
+  .prompt br{display:block; content:""; margin-top:5px}
+  .statement .math-display{margin:18px 0 8px}
 
   /* ---------- Method recap (collapsible recipe) ---------- */
   .method{margin:16px 0 4px}
@@ -278,38 +280,47 @@ const GUIDE = {
     "\\[ I_{2R} = ?\\;\\frac{V_0}{R} \\]",
   figure: {
     type: "svg",
-    caption: "\\(R\\) בטור עם הצירוף המקבילי \\(4R\\,\\|\\,2R\\), המחובר למקור \\(V_0\\).",
-    svg: `<svg viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg">
+    caption: "מהמקור \\(V_0\\) הזרם \\(I\\) עובר דרך \\(R\\) (בטור), מגיע לצומת ומתפצל בין \\(4R\\) ל-\\(2R\\) (במקביל). מבוקש הזרם \\(I_2\\) דרך \\(2R\\).",
+    svg: `<svg viewBox="0 0 440 250" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="dn5" markerWidth="9" markerHeight="9" refX="3" refY="6" orient="auto"><path d="M0 0 L3 6 L6 0 z" fill="#5A6577"/></marker>
+        <marker id="dn5b" markerWidth="9" markerHeight="9" refX="3" refY="6" orient="auto"><path d="M0 0 L3 6 L6 0 z" fill="#B42318"/></marker>
+        <marker id="lf5" markerWidth="9" markerHeight="9" refX="0" refY="3" orient="auto"><path d="M6 0 L0 3 L6 6 z" fill="#1A2230"/></marker>
+      </defs>
       <g stroke="#1A2230" stroke-width="2" fill="none">
-        <line x1="50" y1="50" x2="50" y2="180"/>
-        <line x1="150" y1="50" x2="50" y2="50"/>
-        <line x1="150" y1="50" x2="150" y2="180"/>
-        <line x1="50" y1="180" x2="370" y2="180"/>
-        <line x1="150" y1="65" x2="230" y2="65"/>
-        <line x1="290" y1="65" x2="370" y2="65"/>
-        <line x1="370" y1="65" x2="370" y2="90"/>
-        <line x1="370" y1="140" x2="370" y2="180"/>
+        <line x1="110" y1="55" x2="270" y2="55"/><line x1="350" y1="55" x2="400" y2="55"/>
+        <line x1="110" y1="55" x2="110" y2="90"/><line x1="110" y1="150" x2="110" y2="200"/>
+        <line x1="200" y1="55" x2="200" y2="90"/><line x1="200" y1="150" x2="200" y2="200"/>
+        <line x1="110" y1="200" x2="400" y2="200"/>
+        <line x1="400" y1="55" x2="400" y2="112"/><line x1="400" y1="128" x2="400" y2="200"/>
       </g>
       <g stroke="#2E4BD0" stroke-width="2">
-        <rect x="42" y="95" width="16" height="50" fill="#EAEEFC"/>
-        <rect x="142" y="95" width="16" height="50" fill="#EAEEFC"/>
-        <rect x="230" y="57" width="60" height="16" fill="#EAEEFC"/>
+        <rect x="102" y="90" width="16" height="60" fill="#EAEEFC"/>
+        <rect x="192" y="90" width="16" height="60" fill="#EAEEFC"/>
+        <rect x="270" y="47" width="80" height="16" fill="#EAEEFC"/>
       </g>
       <g fill="#1A2230" font-family="IBM Plex Mono, monospace" font-size="13" text-anchor="middle">
-        <text x="30" y="124">4R</text>
-        <text x="172" y="124">2R</text>
-        <text x="260" y="53">R</text>
+        <text x="86" y="124">4R</text>
+        <text x="174" y="124">2R</text>
+        <text x="310" y="43">R</text>
       </g>
       <g stroke="#147A52" stroke-width="2">
-        <line x1="362" y1="90" x2="378" y2="90"/><line x1="366" y1="140" x2="374" y2="140"/>
+        <line x1="388" y1="112" x2="412" y2="112"/><line x1="394" y1="128" x2="406" y2="128"/>
       </g>
-      <text x="384" y="120" fill="#147A52" font-family="IBM Plex Mono, monospace" font-size="14">V₀</text>
+      <text x="418" y="124" fill="#147A52" font-family="IBM Plex Mono, monospace" font-size="14">V₀</text>
+      <line x1="258" y1="42" x2="214" y2="42" stroke="#1A2230" stroke-width="1.8" marker-end="url(#lf5)"/>
+      <text x="236" y="36" fill="#1A2230" font-family="IBM Plex Mono, monospace" font-size="12">I</text>
+      <line x1="128" y1="100" x2="128" y2="140" stroke="#5A6577" stroke-width="1.8" marker-end="url(#dn5)"/>
+      <text x="140" y="126" fill="#5A6577" font-family="IBM Plex Mono, monospace" font-size="12">I₁</text>
+      <line x1="218" y1="100" x2="218" y2="140" stroke="#B42318" stroke-width="1.8" marker-end="url(#dn5b)"/>
+      <text x="230" y="126" fill="#B42318" font-family="IBM Plex Mono, monospace" font-size="12">I₂</text>
     </svg>`
   },
   method: [
-    "מצרפים את \\(4R\\) ו-\\(2R\\) במקביל.",
-    "מוסיפים בטור את \\(R\\) לקבלת ההתנגדות השקולה והזרם הכולל \\(I=V_0/R_{\\text{שקול}}\\).",
-    "המתח על הצירוף המקבילי שווה למתח על \\(2R\\); ממנו \\(I_{2R}=V_{\\text{מקביל}}/2R\\)."
+    "מזהים שהנגדים \\(4R\\) ו-\\(2R\\) מחוברים במקביל (אותם שני צמתים), ו-\\(R\\) בטור לפניהם.",
+    "מצרפים \\(4R\\,\\|\\,2R\\), מוסיפים בטור את \\(R\\), ומחשבים את הזרם הכולל \\(I=V_0/R_{\\text{שקול}}\\).",
+    "כל הזרם \\(I\\) עובר דרך הצירוף המקבילי, לכן המתח עליו הוא \\(V=I\\cdot R_{\\text{מקביל}}\\) — וזה בדיוק המתח על \\(2R\\).",
+    "הזרם המבוקש: \\(I_2=\\dfrac{V}{2R}\\)."
   ],
   theorems: [
     { name:"נגדים במקביל", statement:"\\(\\dfrac{R_1R_2}{R_1+R_2}\\) לשני נגדים.", crucial:true },
@@ -317,21 +328,34 @@ const GUIDE = {
     { name:"חוק אוהם", statement:"\\(V=IR\\) על כל רכיב.", crucial:true }
   ],
   steps: [
-    { type:"expression", prompt:"מהי ההתנגדות של \\(4R\\) ו-\\(2R\\) במקביל?", answer:"\\frac{4R}{3}",
+    { type:"choice", prompt:"ראשית — כיצד מחוברים שני הנגדים \\(4R\\) ו-\\(2R\\) זה לזה?",
+      choices:[
+        "במקביל — שני קצותיהם מחוברים לאותם שני צמתים",
+        "בטור — הזרם עובר תחילה דרך \\(4R\\) ואז דרך \\(2R\\)"
+      ],
+      answer:0,
       cite:["נגדים במקביל"],
-      hints:["\\(\\dfrac{4R\\cdot 2R}{4R+2R}\\)."],
-      explanation:"\\(\\dfrac{8R^2}{6R}=\\dfrac{4R}{3}\\)." },
-    { type:"expression", prompt:"מהי ההתנגדות השקולה הכוללת (כולל \\(R\\) בטור)?", answer:"\\frac{7R}{3}",
+      explanation:"שני הנגדים תלויים בין אותו צומת עליון (אחרי \\(R\\)) לאותו צומת תחתון (חזרה למקור) — לכן הם במקביל, ו-\\(R\\) מזין אותם בטור." },
+    { type:"expression", prompt:"שלב 1 — צרפו את \\(4R\\) ו-\\(2R\\) במקביל. מהי ההתנגדות שלהם יחד?", answer:"\\frac{4R}{3}",
+      cite:["נגדים במקביל"],
+      hints:["לשני נגדים במקביל: \\(\\dfrac{R_1R_2}{R_1+R_2}\\).","\\(\\dfrac{4R\\cdot 2R}{4R+2R}=\\dfrac{8R^2}{6R}\\)."],
+      explanation:"\\(\\dfrac{4R\\cdot 2R}{4R+2R}=\\dfrac{8R^2}{6R}=\\dfrac{4R}{3}\\)." },
+    { type:"expression", prompt:"שלב 2 — הוסיפו בטור את \\(R\\). מהי ההתנגדות השקולה של כל המעגל?", answer:"\\frac{7R}{3}",
       cite:["נגדים בטור"],
-      hints:["\\(R+\\dfrac{4R}{3}\\)."],
+      hints:["בטור פשוט מחברים: \\(R+\\dfrac{4R}{3}\\).","\\(\\dfrac{3R}{3}+\\dfrac{4R}{3}\\)."],
       explanation:"\\(R+\\dfrac{4R}{3}=\\dfrac{7R}{3}\\)." },
-    { type:"expression", prompt:"מהו המתח על הצירוף המקבילי (כלומר המתח על \\(2R\\))?", answer:"\\frac{4V_0}{7}",
-      hints:["הזרם הכולל \\(I=\\dfrac{V_0}{7R/3}\\). המתח הוא \\(I\\cdot\\dfrac{4R}{3}\\).","חלוקת מתח: \\(V_0\\cdot\\dfrac{4R/3}{7R/3}\\)."],
-      explanation:"\\(V_{\\text{מקביל}}=V_0\\cdot\\dfrac{4R/3}{7R/3}=\\dfrac{4V_0}{7}\\)." },
-    { type:"expression", prompt:"מהו הזרם דרך \\(2R\\)?", answer:"\\frac{2V_0}{7R}",
+    { type:"expression", prompt:"שלב 3 — מהו הזרם הכולל \\(I\\) שיוצא מהמקור (הזרם דרך \\(R\\))?", answer:"\\frac{3V_0}{7R}",
       cite:["חוק אוהם"],
-      hints:["\\(I_{2R}=\\dfrac{V_{\\text{מקביל}}}{2R}=\\dfrac{4V_0/7}{2R}\\)."],
-      explanation:"\\(I_{2R}=\\dfrac{4V_0/7}{2R}=\\dfrac{2V_0}{7R}\\approx 0.29\\,\\dfrac{V_0}{R}\\)." }
+      hints:["\\(I=\\dfrac{V_0}{R_{\\text{שקול}}}=\\dfrac{V_0}{7R/3}\\).","חלוקה בשבר: \\(\\dfrac{V_0}{7R/3}=\\dfrac{3V_0}{7R}\\)."],
+      explanation:"\\(I=\\dfrac{V_0}{7R/3}=\\dfrac{3V_0}{7R}\\) — זהו הזרם הנכנס לצומת." },
+    { type:"expression", prompt:"שלב 4 — כל הזרם \\(I\\) עובר דרך הצירוף המקבילי (\\(4R/3\\)). מהו המתח \\(V\\) עליו, שהוא גם המתח על \\(2R\\)?", answer:"\\frac{4V_0}{7}",
+      cite:["חוק אוהם"],
+      hints:["\\(V=I\\cdot R_{\\text{מקביל}}=\\dfrac{3V_0}{7R}\\cdot\\dfrac{4R}{3}\\).","לחלופין, \\(V\\) הוא \\(V_0\\) פחות הנפילה על \\(R\\): \\(V_0-IR=V_0-\\dfrac{3V_0}{7}\\)."],
+      explanation:"\\(V=\\dfrac{3V_0}{7R}\\cdot\\dfrac{4R}{3}=\\dfrac{4V_0}{7}\\)." },
+    { type:"expression", prompt:"שלב 5 — מהו הזרם \\(I_2\\) דרך הנגד \\(2R\\)?", answer:"\\frac{2V_0}{7R}",
+      cite:["חוק אוהם"],
+      hints:["על \\(2R\\) שורר המתח \\(V\\): \\(I_2=\\dfrac{V}{2R}=\\dfrac{4V_0/7}{2R}\\)."],
+      explanation:"\\(I_2=\\dfrac{4V_0/7}{2R}=\\dfrac{2V_0}{7R}\\approx 0.29\\,\\dfrac{V_0}{R}\\) — כלומר יש להזין \\(0.29\\)." }
   ]
 };
 
@@ -383,19 +407,21 @@ const T = Object.assign({}, STRINGS[LANG] || STRINGS.en, GUIDE.ui || {});
 
 /* ---- render LaTeX-in-text safely: split on \[..\] and \(..\) ---- */
 function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
-function mathText(str){
+function mathText(str, opts){
   if (str == null) return "";
+  const __brk = opts && opts.breakSentences;
+  const tx = s => { let t = esc(s).replace(/\n/g, "<br>"); if (__brk) t = t.replace(/([.?:])[ \t]+/g, "$1<br>"); return t; };
   let html = "", i = 0;
   const re = /\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)/g; let m;
   while ((m = re.exec(str))){
-    html += esc(str.slice(i, m.index));
+    html += tx(str.slice(i, m.index));
     if (m[1] !== undefined)
       html += '<div class="math-display m-ltr">'+convertLatexToMarkup('\\displaystyle '+m[1])+'</div>';
     else
       html += '<span class="m-ltr">'+convertLatexToMarkup(m[2])+'</span>';
     i = re.lastIndex;
   }
-  html += esc(str.slice(i));
+  html += tx(str.slice(i));
   return html;
 }
 
@@ -598,7 +624,7 @@ function renderBars(spec){
 const $ = (id)=>document.getElementById(id);
 $('topic').textContent = GUIDE.topic || "";
 $('title').innerHTML = mathText(GUIDE.title || T.titleFallback);
-$('statement').innerHTML = mathText(GUIDE.statement || "");
+$('statement').innerHTML = mathText(GUIDE.statement || "", {breakSentences:true});
 $('done').textContent = T.done;
 $('reset').textContent = T.reset;
 document.querySelector('#method summary span:last-of-type').textContent = T.methodTitle;
@@ -652,7 +678,7 @@ function buildWork(step, idx, li){
   const prompt = li.querySelector('.prompt');
   const work = li.querySelector('.work');
   const explain = li.querySelector('.explain');
-  prompt.innerHTML = mathText(step.prompt);
+  prompt.innerHTML = mathText(step.prompt, {breakSentences:true});
   explain.innerHTML = mathText(step.explanation || "");
   li.querySelector('.locked-note').textContent = T.lockedNote;
   li.querySelector('.committed .lbl').textContent = T.yourAnswer;

@@ -47,10 +47,12 @@
     text-transform:uppercase; color:var(--primary); margin:0 0 10px}
   h1.title{font-family:var(--serif); font-weight:600; font-size:30px;
     line-height:1.2; margin:0 0 18px; letter-spacing:-.01em}
-  .statement{font-family:var(--serif); font-size:19px; color:#27313f;
+  .statement{font-family:var(--serif); font-size:19px; line-height:1.85; color:#27313f;
     background:var(--surface); border:1px solid var(--line);
-    border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow)}
-  .statement .math-display{margin:14px 0 4px}
+    border-radius:var(--radius); padding:24px 26px; box-shadow:var(--shadow)}
+  .statement br{display:block; content:""; margin-top:8px}
+  .prompt br{display:block; content:""; margin-top:5px}
+  .statement .math-display{margin:18px 0 8px}
 
   /* ---------- Method recap (collapsible recipe) ---------- */
   .method{margin:16px 0 4px}
@@ -368,19 +370,21 @@ const T = Object.assign({}, STRINGS[LANG] || STRINGS.en, GUIDE.ui || {});
 
 /* ---- render LaTeX-in-text safely: split on \[..\] and \(..\) ---- */
 function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
-function mathText(str){
+function mathText(str, opts){
   if (str == null) return "";
+  const __brk = opts && opts.breakSentences;
+  const tx = s => { let t = esc(s).replace(/\n/g, "<br>"); if (__brk) t = t.replace(/([.?:])[ \t]+/g, "$1<br>"); return t; };
   let html = "", i = 0;
   const re = /\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)/g; let m;
   while ((m = re.exec(str))){
-    html += esc(str.slice(i, m.index));
+    html += tx(str.slice(i, m.index));
     if (m[1] !== undefined)
       html += '<div class="math-display m-ltr">'+convertLatexToMarkup('\\displaystyle '+m[1])+'</div>';
     else
       html += '<span class="m-ltr">'+convertLatexToMarkup(m[2])+'</span>';
     i = re.lastIndex;
   }
-  html += esc(str.slice(i));
+  html += tx(str.slice(i));
   return html;
 }
 
@@ -583,7 +587,7 @@ function renderBars(spec){
 const $ = (id)=>document.getElementById(id);
 $('topic').textContent = GUIDE.topic || "";
 $('title').innerHTML = mathText(GUIDE.title || T.titleFallback);
-$('statement').innerHTML = mathText(GUIDE.statement || "");
+$('statement').innerHTML = mathText(GUIDE.statement || "", {breakSentences:true});
 $('done').textContent = T.done;
 $('reset').textContent = T.reset;
 document.querySelector('#method summary span:last-of-type').textContent = T.methodTitle;
@@ -637,7 +641,7 @@ function buildWork(step, idx, li){
   const prompt = li.querySelector('.prompt');
   const work = li.querySelector('.work');
   const explain = li.querySelector('.explain');
-  prompt.innerHTML = mathText(step.prompt);
+  prompt.innerHTML = mathText(step.prompt, {breakSentences:true});
   explain.innerHTML = mathText(step.explanation || "");
   li.querySelector('.locked-note').textContent = T.lockedNote;
   li.querySelector('.committed .lbl').textContent = T.yourAnswer;
